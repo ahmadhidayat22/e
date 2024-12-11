@@ -2,15 +2,29 @@ from flask import Flask, request
 import pandas as pd
 import tensorflow as tf
 import numpy as np
-# import os
+from sklearn.preprocessing import StandardScaler
+import logging
 
-model = tf.keras.models.load_model("models/model_terbaru.h5")
+logging.basicConfig(level=logging.ERROR)
+
+model = tf.keras.models.load_model("models/nutrisee_model.h5")
 
 app = Flask(__name__)
+data_csv = pd.read_csv('data/data.csv')
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    
+  try: 
+    # data_csv = pd.read_csv('data/data.csv')
+          
+    X = data_csv[['saturated-fat_100g', 'sugars_100g', 'fiber_100g', 'proteins_100g',
+    'sodium_100g', 'fruits-vegetables-nuts-estimate-from-ingredients_100g', 'energy_kj']]
+    print(request.form)
+
+    # Normalize features
+    scaler = StandardScaler()
+    scaler.fit_transform(X)
+
     saturated_fat = float(request.form.get("saturated-fat_100g", default=0))
     sugar =  float(request.form.get("sugar_100g", default=0))
     fiber = float(request.form.get("fiber_100g", default=0))
@@ -29,10 +43,11 @@ def predict():
     'energy_kj': [energy]
     })
 
-    predictions = model.predict(data)
-    print(data)
-    print(predictions)
-        # Mapping indeks ke label kelas
+    data_scaled = scaler.transform(data)
+
+    predictions = model.predict(data_scaled)
+
+    # Mapping indeks ke label kelas
     classes = ['A', 'B', 'C', 'D', 'E']
 
     # Cari indeks dengan nilai maksimum
@@ -43,7 +58,19 @@ def predict():
 
     # Output probabilitas
     return predicted_labels
+  except Exception as e:
+    logging.error(f"Error occurred: {str(e)}")
+    return {
+        "success": False,
+        "error": "An unexpected error occurred. Please try again later."
+    }, 500
+  
+
+@app.route('/')
+def main():
+  return "hello world"
+
 
 if __name__ == '__main__':
-    port = 4000
-    app.run(host="0.0.0.0", port=port)
+    port= 4000
+    app.run(debug=True, port=port)
