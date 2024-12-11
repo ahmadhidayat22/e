@@ -2,7 +2,7 @@ from flask import Flask, request
 import pandas as pd
 import tensorflow as tf
 import numpy as np
-
+# import os
 
 model = tf.keras.models.load_model("models/model_terbaru.h5")
 
@@ -45,4 +45,5 @@ def predict():
     return predicted_labels
 
 if __name__ == '__main__':
-    app.run(debug=True, port=4000)
+    port = 4000
+    app.run(host="0.0.0.0", port=port)
